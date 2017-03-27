@@ -1,1 +1,1 @@
-include ':app', ':un7zip'
+include ':app'

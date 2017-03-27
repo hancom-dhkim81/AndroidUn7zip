@@ -1,27 +1,43 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 25
+    compileSdkVersion 22
     buildToolsVersion "25.0.0"
 
     defaultConfig {
-        applicationId "com.hzy.un7zip"
-        minSdkVersion 15
-        targetSdkVersion 25
-        versionCode 1
-        versionName "1.0"
+        applicationId "com.hu.andun7z"
+        minSdkVersion 21
+        targetSdkVersion 24
+
+        ndk {
+            moduleName "un7z"
+        }
     }
+
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
+    externalNativeBuild {
+        ndkBuild {
+            path 'src/main/jni/Android.mk'
+        }
+    }
+
+    lintOptions {
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
+    }
+
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:25.0.1'
-    compile project(':un7zip')
+    compile 'com.android.support:support-v4:18.0.0'
+    compile 'org.apache.commons:commons-compress:1.12'
+    compile 'org.tukaani:xz:1.5'
+    compile 'org.jetbrains:annotations-java5:15.0'
 }

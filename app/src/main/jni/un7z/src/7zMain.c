@@ -1,9 +1,6 @@
 /* 7zMain.c - Test application for 7z Decoder
  2010-10-28 : Igor Pavlov : Public domain */
 
-#include <jni.h>
-#include <android/log.h>
-
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -15,25 +12,13 @@
 #include "7zFile.h"
 #include "7zVersion.h"
 
-#define LOG_TAG "jniLog"
-#undef LOG
-
-#ifdef DEBUG
-#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-#define LOGW(...) __android_log_print(ANDROID_LOG_WARN,LOG_TAG,__VA_ARGS__)
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
-#define LOGF(...) __android_log_print(ANDROID_LOG_FATAL,LOG_TAG,__VA_ARGS__)
-#else
-#define LOGD(...) do{}while(0)
-#define LOGI(...) do{}while(0)
-#define LOGW(...) do{}while(0)
-#define LOGE(...) do{}while(0)
-#define LOGF(...) do{}while(0)
-#endif
-
+#include "../JniWrapper.h"
+#include "Ppmd.h"
+#include "Types.h"
 
 #define PATH_MAX 2048
+
+typedef  int(*pFunc)(int count, int total);
 
 static ISzAlloc g_Alloc = { SzAlloc, SzFree };
 
@@ -152,7 +137,7 @@ void PrintError(char *sz) {
 	LOGD("ERROR: %s", sz);
 }
 
-int extract7z(const char* inFile, const char* outPath) {
+int extract7z(const char* inFile, const char* outPath, pFunc p_func, int onlyGetEntryCount) {
 	CFileInStream archiveStream;
 	CLookToRead lookStream;
 	CSzArEx db;
@@ -187,7 +172,7 @@ int extract7z(const char* inFile, const char* outPath) {
 	SzArEx_Init(&db);
 	res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp);
 
-	if (res == SZ_OK)
+	if (res == SZ_OK && onlyGetEntryCount != 1)
 	{
 		UInt32 i;
 		UInt32 j;
@@ -241,6 +226,7 @@ int extract7z(const char* inFile, const char* outPath) {
 			}
 			if (f->IsDir) {
 				MyCreateDir(outPath, destPath);
+				p_func(i + 1, db.db.NumFiles);
 				continue;
 			} else if (OutFile_OpenUtf16(&outFile, outPath, destPath)) {
 				PrintError("can not open output file");
@@ -259,13 +245,23 @@ int extract7z(const char* inFile, const char* outPath) {
 				res = SZ_ERROR_FAIL;
 				break;
 			}
+
+			p_func(i + 1, db.db.NumFiles);
 		}
 		IAlloc_Free(&allocImp, outBuffer);
 	}
+
+	int fileCount = db.db.NumFiles;
+
 	SzArEx_Free(&db, &allocImp);
 	SzFree(NULL, temp);
 
 	File_Close(&archiveStream.file);
+
+	if (onlyGetEntryCount == 1) {
+		return fileCount;
+	}
+
 	if (res == SZ_OK)
 	{
 		LOGD("Everything is Ok");

@@ -34,3 +34,7 @@ proguard/
 .DS_Store
 /build
 /captures
+/.gitignore
+.externalNativeBuild
+assets
+
